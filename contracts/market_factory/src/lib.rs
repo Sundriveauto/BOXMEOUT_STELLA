@@ -585,4 +585,51 @@ mod tests {
             "Should fail (no WASM hash) but NOT due to pause guard"
         );
     }
+
+    #[test]
+    fn test_admin_can_transfer() {
+        let (env, client) = setup();
+        let admin = Address::generate(&env);
+        let new_admin = Address::generate(&env);
+        let oracles: Vec<Address> = Vec::new(&env);
+        client.initialize(&admin, &200u32, &oracles);
+
+        client.transfer_admin(&admin, &new_admin);
+
+        // new_admin can pause → proves they are now admin
+        client.pause_factory(&new_admin);
+        assert!(client.is_paused());
+    }
+
+    #[test]
+    fn test_old_admin_loses_access_after_transfer() {
+        let (env, client) = setup();
+        let admin = Address::generate(&env);
+        let new_admin = Address::generate(&env);
+        let oracles: Vec<Address> = Vec::new(&env);
+        client.initialize(&admin, &200u32, &oracles);
+
+        client.transfer_admin(&admin, &new_admin);
+
+        // old admin can no longer pause
+        let result = client.try_pause_factory(&admin);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_non_admin_cannot_transfer() {
+        let (env, client) = setup();
+        let admin = Address::generate(&env);
+        let impostor = Address::generate(&env);
+        let new_admin = Address::generate(&env);
+        let oracles: Vec<Address> = Vec::new(&env);
+        client.initialize(&admin, &200u32, &oracles);
+
+        let result = client.try_transfer_admin(&impostor, &new_admin);
+        assert!(result.is_err());
+
+        // admin is still the original
+        client.pause_factory(&admin);
+        assert!(client.is_paused());
+    }
 }
