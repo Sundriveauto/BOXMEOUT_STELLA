@@ -2536,3 +2536,90 @@ mod market_lifecycle_tests {
         assert!(r1.amount_won + r2.amount_won + r3.amount_won <= net_pool);
     }
 }
+
+#[cfg(test)]
+mod initialize_tests {
+    use soroban_sdk::{
+        testutils::{Address as _, Ledger, LedgerInfo},
+        Address, Env,
+    };
+
+    use boxmeout_shared::types::{
+        FightDetails, MarketConfig, MarketStatus, OptionalOracleRole, OptionalOutcome,
+    };
+
+    fn default_fight(env: &Env) -> FightDetails {
+        FightDetails {
+            match_id: soroban_sdk::String::from_str(env, "FURY-USYK-2025"),
+            fighter_a: soroban_sdk::String::from_str(env, "Fury"),
+            fighter_b: soroban_sdk::String::from_str(env, "Usyk"),
+            weight_class: soroban_sdk::String::from_str(env, "Heavyweight"),
+            scheduled_at: 100_000,
+            venue: soroban_sdk::String::from_str(env, "Riyadh"),
+            title_fight: true,
+        }
+    }
+
+    fn default_config() -> MarketConfig {
+        MarketConfig {
+            min_bet: 1_000_000,
+            max_bet: 100_000_000_000,
+            fee_bps: 200,
+            lock_before_secs: 3600,
+            resolution_window: 86400,
+        }
+    }
+
+    fn setup(env: &Env) -> (crate::MarketClient<'static>, Address, Address) {
+        env.mock_all_auths();
+        env.ledger().set(LedgerInfo {
+            timestamp: 1_000,
+            protocol_version: 20,
+            sequence_number: 100,
+            network_id: Default::default(),
+            base_reserve: 1,
+            min_temp_entry_ttl: 16,
+            min_persistent_entry_ttl: 4096,
+            max_entry_ttl: 6_311_520,
+        });
+
+        let factory = Address::generate(env);
+        let treasury = Address::generate(env);
+        let contract_id = env.register_contract(None, crate::Market);
+        let client = crate::MarketClient::new(env, &contract_id);
+        client.initialize(&factory, &1u64, &default_fight(env), &default_config(), &treasury);
+        (client, factory, treasury)
+    }
+
+    #[test]
+    fn test_initialize_sets_correct_state() {
+        let env = Env::default();
+        let (client, factory, treasury) = setup(&env);
+
+        let state = client.get_state();
+        assert_eq!(state.market_id, 1u64);
+        assert_eq!(state.status, MarketStatus::Open);
+        assert_eq!(state.outcome, OptionalOutcome::None);
+        assert_eq!(state.pool_a, 0);
+        assert_eq!(state.pool_b, 0);
+        assert_eq!(state.pool_draw, 0);
+        assert_eq!(state.total_pool, 0);
+        assert_eq!(state.resolved_at, 0);
+        assert_eq!(state.oracle_used, OptionalOracleRole::None);
+    }
+
+    #[test]
+    fn test_initialize_rejects_double_init() {
+        let env = Env::default();
+        let (client, factory, treasury) = setup(&env);
+
+        let result = client.try_initialize(
+            &factory,
+            &1u64,
+            &default_fight(&env),
+            &default_config(),
+            &treasury,
+        );
+        assert!(result.is_err());
+    }
+}
