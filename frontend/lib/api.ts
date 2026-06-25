@@ -72,6 +72,8 @@ export interface MarketQueryParams {
   limit?: number;
 }
 
+export type MarketFilters = MarketQueryParams;
+
 // ─── API FUNCTIONS ────────────────────────────────────────────────────────────
 
 /**
