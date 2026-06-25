@@ -1,4 +1,6 @@
-import { Bet, PortfolioSummary } from "@/lib/api";
+"use client";
+import { useState, useEffect } from "react";
+import { Bet, PortfolioSummary, fetchBetsByAddress, fetchPortfolioSummary } from "@/lib/api";
 
 export interface UsePortfolioResult {
   bets: Bet[];
@@ -13,5 +15,43 @@ export interface UsePortfolioResult {
  * Does not activate any network requests until address is non-null.
  */
 export function usePortfolio(address: string | null): UsePortfolioResult {
-  throw new Error("Not implemented");
+  const [bets, setBets] = useState<Bet[]>([]);
+  const [summary, setSummary] = useState<PortfolioSummary | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const fetchData = async () => {
+    if (!address) {
+      setBets([]);
+      setSummary(null);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const [betsData, summaryData] = await Promise.all([
+        fetchBetsByAddress(address),
+        fetchPortfolioSummary(address),
+      ]);
+      setBets(betsData);
+      setSummary(summaryData);
+    } catch (error) {
+      // Handle partial failure gracefully
+      if (error instanceof Error) {
+        console.error("Failed to fetch portfolio data:", error.message);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [address]);
+
+  return {
+    bets,
+    summary,
+    isLoading,
+    refetch: fetchData,
+  };
 }
