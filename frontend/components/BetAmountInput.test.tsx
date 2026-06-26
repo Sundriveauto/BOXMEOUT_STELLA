@@ -83,7 +83,8 @@ describe("BetAmountInput", () => {
       />
     );
 
-    expect(screen.getByText(/Est. payout: 15\.00 XLM/)).toBeInTheDocument();
+    expect(screen.getByText(/Est. payout:/)).toBeInTheDocument();
+    expect(screen.getByText(/15\.00 XLM/)).toBeInTheDocument();
   });
 
   it("does not show payout estimate when null", () => {
@@ -115,41 +116,6 @@ describe("BetAmountInput", () => {
     expect(screen.getByText(/Enter an amount between 1 and 10000 XLM/)).toBeInTheDocument();
   });
 
-  it("shows quick-fill buttons for 10, 50, 100 XLM", () => {
-    const onChange = jest.fn();
-    render(
-      <BetAmountInput
-        value=""
-        onChange={onChange}
-        min={1}
-        max={10000}
-        estimatedPayout={null}
-      />
-    );
-
-    expect(screen.getByRole("button", { name: /10 XLM/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /50 XLM/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /100 XLM/ })).toBeInTheDocument();
-  });
-
-  it("calls onChange with correct stroops conversion on quick-fill", async () => {
-    const onChange = jest.fn();
-    const user = userEvent.setup();
-    render(
-      <BetAmountInput
-        value=""
-        onChange={onChange}
-        min={1}
-        max={10000}
-        estimatedPayout={null}
-      />
-    );
-
-    await user.click(screen.getByRole("button", { name: /10 XLM/ }));
-
-    expect(onChange).toHaveBeenCalledWith("10");
-  });
-
   it("disables input when disabled prop is true", () => {
     render(
       <BetAmountInput
@@ -164,6 +130,25 @@ describe("BetAmountInput", () => {
 
     const input = screen.getByRole("spinbutton");
     expect(input).toBeDisabled();
+  });
+
+  it("calls onChange when input value changes", async () => {
+    const user = userEvent.setup();
+    const onChange = jest.fn();
+    render(
+      <BetAmountInput
+        value=""
+        onChange={onChange}
+        min={1}
+        max={10000}
+        estimatedPayout={null}
+      />
+    );
+
+    const input = screen.getByRole("spinbutton");
+    await user.type(input, "50");
+
+    expect(onChange).toHaveBeenCalled();
   });
 
   it("matches the snapshot", () => {

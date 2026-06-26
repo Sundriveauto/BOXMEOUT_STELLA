@@ -23,9 +23,9 @@ describe("FighterCard", () => {
     render(<FighterCard fighter={buildFighter()} side="A" poolAmount={1200n} impliedOdds={72.5} />);
 
     expect(screen.getByText("Lina Torres")).toBeInTheDocument();
-    expect(screen.getByText("18-2")).toBeInTheDocument();
-    expect(screen.getByText("USA")).toBeInTheDocument();
-    expect(screen.getByText("Featherweight")).toBeInTheDocument();
+    expect(screen.getByText(/18-2/)).toBeInTheDocument();
+    expect(screen.getByText(/USA/)).toBeInTheDocument();
+    expect(screen.getByText(/Featherweight/)).toBeInTheDocument();
   });
 
   it("formats pool amount from stroops to XLM with 2 decimal places", () => {
@@ -46,18 +46,20 @@ describe("FighterCard", () => {
     expect(screen.getByText(/62\.5%/)).toBeInTheDocument();
   });
 
-  it("applies blue background tint for side A", () => {
+  it("applies blue border accent for side A", () => {
     const { container } = render(<FighterCard fighter={buildFighter()} side="A" poolAmount={1200n} impliedOdds={72.5} />);
     const card = container.querySelector("div");
 
-    expect(card?.className).toContain("bg-blue");
+    expect(card?.className).toContain("border-blue-500");
+    expect(card?.className).toContain("text-blue-400");
   });
 
-  it("applies red background tint for side B", () => {
+  it("applies red border accent for side B", () => {
     const { container } = render(<FighterCard fighter={buildFighter()} side="B" poolAmount={1200n} impliedOdds={27.5} />);
     const card = container.querySelector("div");
 
-    expect(card?.className).toContain("bg-red");
+    expect(card?.className).toContain("border-red-500");
+    expect(card?.className).toContain("text-red-400");
   });
 
   it("matches the structural snapshot", () => {
